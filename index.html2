@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DirectLink & HTML Suite</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              800: '#5b21b6',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- LZ-String Compression for Sharing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    .code-textarea {
+      tab-size: 2;
+      -moz-tab-size: 2;
+      white-space: pre;
+      word-wrap: normal;
+      overflow-x: auto;
+      resize: none;
+      outline: none;
+      border: none;
+    }
+    .line-numbers {
+      user-select: none;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans h-screen flex flex-col overflow-hidden select-none">
+
+  <!-- Top Main Navigation Bar -->
+  <header class="bg-white border-b border-slate-200 h-13 px-4 flex items-center justify-between shrink-0 z-30 gap-3">
+    <!-- App Brand Logo -->
+    <div class="flex items-center space-x-2 shrink-0">
+      <div class="w-7 h-7 bg-brand-700 rounded flex items-center justify-center text-white font-bold text-xs tracking-tighter">
+        <i class="fa-solid fa-code"></i>
+      </div>
+      <span class="font-bold text-slate-900 text-sm tracking-tight hidden sm:inline">DirectLink & HTML Suite</span>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="flex items-center space-x-1 bg-slate-100 p-1 rounded-md border border-slate-200 overflow-x-auto text-xs font-semibold scrollbar-none">
+      <button onclick="switchMainTab('link-creator')" id="main-tab-link-creator" class="main-tab-btn px-3 py-1.5 rounded transition text-white bg-brand-700 whitespace-nowrap">
+        <i class="fa-solid fa-link text-[11px] mr-1"></i> リンク作成
+      </button>
+      <button onclick="switchMainTab('html-creator')" id="main-tab-html-creator" class="main-tab-btn px-3 py-1.5 rounded transition text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 whitespace-nowrap">
+        <i class="fa-regular fa-file-code text-[11px] mr-1"></i> HTMLファイル作成
+      </button>
+      <button onclick="switchMainTab('html-box')" id="main-tab-html-box" class="main-tab-btn px-3 py-1.5 rounded transition text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 whitespace-nowrap">
+        <i class="fa-solid fa-boxes-stacked text-[11px] mr-1"></i> HTML共有 (HTML Box)
+      </button>
+      <button onclick="switchMainTab('html-extractor')" id="main-tab-html-extractor" class="main-tab-btn px-3 py-1.5 rounded transition text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 whitespace-nowrap">
+        <i class="fa-solid fa-download text-[11px] mr-1"></i> HTML抽出
+      </button>
+      <button onclick="switchMainTab('file-converter')" id="main-tab-file-converter" class="main-tab-btn px-3 py-1.5 rounded transition text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 whitespace-nowrap">
+        <i class="fa-solid fa-arrows-rotate text-[11px] mr-1"></i> ファイルコンバータ
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Viewports Container -->
+  <div class="flex-1 flex min-h-0 min-w-0 overflow-hidden relative">
+
+    <!-- TAB 1: リンク作成 (Direct Link Creator) -->
+    <section id="view-link-creator" class="main-view flex-1 flex flex-col p-4 md:p-6 overflow-y-auto space-y-6">
+      <div class="max-w-4xl w-full mx-auto space-y-6">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">直リンク作成 (Data URI)</h2>
+          <p class="text-xs text-slate-500 mt-1">画像や音声、各種ファイルを読み込み、外部サーバー不要の直リンク（Data URI）を生成します。</p>
+        </div>
+
+        <!-- Upload Drop Zone -->
+        <div id="drop-zone" onclick="document.getElementById('link-file-input').click()" 
+          class="border-2 border-dashed border-slate-300 hover:border-brand-700 bg-white hover:bg-brand-50/30 rounded-lg p-8 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-3">
+          <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-700">ファイルを選択 または ドラッグ＆ドロップ</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">画像 (PNG, JPG, WebP, SVG), 音声 (MP3, WAV, OGG, M4A), 動画, その他ファイル</p>
+          </div>
+          <input type="file" id="link-file-input" class="hidden" onchange="handleLinkFileUpload(event)">
+        </div>
+
+        <!-- Result Preview & Direct Link -->
+        <div id="link-result-card" class="hidden bg-white border border-slate-200 rounded-lg p-4 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center space-x-2 truncate">
+              <i class="fa-solid fa-file text-brand-700"></i>
+              <span id="res-file-name" class="text-xs font-bold text-slate-800 truncate">file.png</span>
+              <span id="res-file-size" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">0 KB</span>
+            </div>
+          </div>
+
+          <!-- Interactive File Preview -->
+          <div id="res-preview-box" class="bg-slate-50 border border-slate-200 rounded p-4 flex items-center justify-center min-h-[120px]">
+            <!-- Dynamic preview -->
+          </div>
+
+          <!-- Direct Link Output -->
+          <div class="space-y-1">
+            <label class="block text-xs font-semibold text-slate-700">直リンク (Data URI)</label>
+            <div class="flex gap-2">
+              <input type="text" id="res-data-uri" readonly class="flex-1 bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs font-mono text-slate-700 focus:outline-none truncate">
+              <button onclick="copyInput('res-data-uri')" class="px-3 py-1.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded shrink-0">
+                コピー
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Library -->
+        <div class="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-clock-rotate-left text-slate-400"></i> リンク作成履歴
+            </h3>
+            <button onclick="clearLinkHistory()" class="text-[11px] text-slate-400 hover:text-rose-600 transition">履歴消去</button>
+          </div>
+          <div id="link-history-list" class="space-y-2 max-h-80 overflow-y-auto">
+            <!-- Dynamic history items -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: HTMLファイル作成 (HTML File Creator) -->
+    <section id="view-html-creator" class="main-view hidden flex-1 flex flex-col p-4 md:p-6 overflow-y-auto space-y-4">
+      <div class="max-w-5xl w-full mx-auto flex flex-col flex-1 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">HTMLファイル作成</h2>
+            <p class="text-xs text-slate-500 mt-0.5">簡単なHTMLを編集し、リアルタイム確認とファイルの保存を行えます。</p>
+          </div>
+          <button onclick="downloadCreatorHtml()" class="px-3 py-1.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded flex items-center gap-1.5">
+            <i class="fa-solid fa-download"></i> HTML保存
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-[450px]">
+          <!-- Editor -->
+          <div class="flex flex-col bg-white border border-slate-200 rounded-lg overflow-hidden">
+            <div class="bg-slate-50 border-b border-slate-200 px-3 py-1.5 flex justify-between items-center text-xs text-slate-600 font-semibold">
+              <span>HTMLエディタ</span>
+              <button onclick="resetCreatorTemplate()" class="text-[11px] text-slate-400 hover:text-slate-700">初期化</button>
+            </div>
+            <textarea id="creator-editor" spellcheck="false" class="code-textarea flex-1 p-3 text-xs font-mono bg-white text-slate-800 focus:outline-none" oninput="updateCreatorPreview()">Hello, World!</textarea>
+          </div>
+
+          <!-- Preview -->
+          <div class="flex flex-col bg-white border border-slate-200 rounded-lg overflow-hidden">
+            <div class="bg-slate-50 border-b border-slate-200 px-3 py-1.5 text-xs text-slate-600 font-semibold">
+              プレビュー
+            </div>
+            <iframe id="creator-preview-frame" class="w-full flex-1 border-none bg-white"></iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: HTML共有 (HTML Box Full Implementation) -->
+    <section id="view-html-box" class="main-view hidden flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
+      <!-- HTML Box Header Toolbar -->
+      <div class="bg-white border-b border-slate-200 h-11 px-3 flex items-center justify-between shrink-0 gap-2 z-10">
+        <!-- Sidebar Toggle, Title, New, Delete All -->
+        <div class="flex items-center space-x-2 shrink-0">
+          <button onclick="toggleBoxSidebar()" class="p-1.5 text-slate-600 hover:bg-slate-100 rounded transition" title="サイドバー開閉">
+            <i class="fa-solid fa-bars text-xs"></i>
+          </button>
+          
+          <input type="text" id="box-active-title" class="w-28 sm:w-36 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-xs font-bold text-slate-800 focus:outline-none focus:border-brand-700 truncate" onchange="updateBoxActiveTitle(this.value)">
+
+          <div class="flex items-center space-x-1">
+            <button onclick="createNewBoxProject()" class="px-2.5 py-1.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded transition flex items-center gap-1">
+              <i class="fa-solid fa-plus text-xs"></i> <span>新規作成</span>
+            </button>
+            <button onclick="confirmBoxDeleteAll()" class="px-2 py-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 rounded transition text-xs flex items-center gap-1">
+              <i class="fa-regular fa-trash-can"></i> <span class="hidden md:inline">全削除</span>
+            </button>
+          </div>
+
+          <!-- Per-Project Open Count -->
+          <div class="hidden lg:flex items-center text-[11px] font-mono bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-full" title="このプロジェクトの開封数 (Open)">
+            <i class="fa-regular fa-eye text-brand-700 mr-1"></i>
+            <span>Open: <strong id="box-active-views" class="font-bold text-brand-700">0</strong></span>
+          </div>
+        </div>
+
+        <!-- JSBin Panel Toggles -->
+        <div class="flex bg-slate-100 p-0.5 rounded border border-slate-200 text-xs font-semibold space-x-0.5 shrink-0">
+          <button onclick="toggleBoxPane('html')" id="btn-box-pane-html" class="px-2.5 py-1 rounded transition text-white bg-brand-700">HTML</button>
+          <button onclick="toggleBoxPane('css')" id="btn-box-pane-css" class="px-2.5 py-1 rounded transition text-slate-600 hover:text-slate-900 bg-transparent">CSS</button>
+          <button onclick="toggleBoxPane('js')" id="btn-box-pane-js" class="px-2.5 py-1 rounded transition text-slate-600 hover:text-slate-900 bg-transparent">JS</button>
+          <button onclick="toggleBoxPane('preview')" id="btn-box-pane-preview" class="px-2.5 py-1 rounded transition text-white bg-brand-700">Preview</button>
+        </div>
+
+        <!-- Right Tools -->
+        <div class="flex items-center space-x-1 shrink-0">
+          <button onclick="openBoxShareModal()" class="px-2.5 py-1.5 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded flex items-center gap-1">
+            <i class="fa-solid fa-share-nodes text-brand-700"></i> <span>共有</span>
+          </button>
+          <button onclick="downloadBoxHtml()" class="px-2 py-1.5 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded">
+            <i class="fa-solid fa-download"></i>
+          </button>
+          <button onclick="openBoxInNewTab()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium rounded flex items-center gap-1">
+            <i class="fa-solid fa-up-right-from-square text-xs"></i> <span class="hidden sm:inline">別タブ表示</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main HTML Box Area -->
+      <div class="flex-1 flex overflow-hidden relative w-full h-full">
+
+        <!-- Sidebar -->
+        <aside id="box-sidebar" class="w-60 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-10">
+          <div class="p-2.5 border-b border-slate-200 flex items-center justify-between text-xs font-bold text-slate-600 uppercase tracking-wider">
+            <span><i class="fa-solid fa-folder text-brand-700 mr-1"></i> Projects</span>
+            <span id="box-save-status" class="text-[10px] font-mono text-emerald-600">保存済み</span>
+          </div>
+          <div id="box-project-list" class="flex-1 overflow-y-auto p-1.5 space-y-1">
+            <!-- Project items dynamically rendered -->
+          </div>
+        </aside>
+
+        <!-- Code & Preview Split Container -->
+        <main id="box-panes-wrapper" class="flex-1 flex flex-col md:flex-row overflow-hidden bg-slate-200 divide-y md:divide-y-0 md:divide-x divide-slate-300 w-full h-full min-w-0">
+          
+          <!-- HTML Pane -->
+          <div id="box-pane-html" class="flex-1 min-w-0 w-full md:w-auto flex flex-col bg-white overflow-hidden h-full">
+            <div class="bg-slate-50 border-b border-slate-200 px-3 py-1 flex justify-between items-center text-xs text-slate-600 font-semibold shrink-0">
+              <span>HTML</span>
+              <span id="box-stat-html" class="text-[10px] font-mono text-slate-400">1 行</span>
+            </div>
+            <div class="flex-1 flex min-h-0 relative overflow-hidden font-mono text-xs">
+              <div id="box-lines-html" class="line-numbers w-8 py-2.5 bg-slate-50 border-r border-slate-200 text-slate-400 text-right pr-2 shrink-0">1</div>
+              <textarea id="box-editor-html" spellcheck="false" class="code-textarea flex-1 w-full h-full p-2.5 text-slate-800 bg-transparent border-none" placeholder="<!-- HTML -->"></textarea>
+            </div>
+          </div>
+
+          <!-- CSS Pane -->
+          <div id="box-pane-css" class="hidden flex-1 min-w-0 w-full md:w-auto flex flex-col bg-white overflow-hidden h-full">
+            <div class="bg-slate-50 border-b border-slate-200 px-3 py-1 flex justify-between items-center text-xs text-slate-600 font-semibold shrink-0">
+              <span>CSS</span>
+              <span id="box-stat-css" class="text-[10px] font-mono text-slate-400">0 行</span>
+            </div>
+            <div class="flex-1 flex min-h-0 relative overflow-hidden font-mono text-xs">
+              <div id="box-lines-css" class="line-numbers w-8 py-2.5 bg-slate-50 border-r border-slate-200 text-slate-400 text-right pr-2 shrink-0">1</div>
+              <textarea id="box-editor-css" spellcheck="false" class="code-textarea flex-1 w-full h-full p-2.5 text-slate-800 bg-transparent border-none" placeholder="/* CSS */"></textarea>
+            </div>
+          </div>
+
+          <!-- JS Pane -->
+          <div id="box-pane-js" class="hidden flex-1 min-w-0 w-full md:w-auto flex flex-col bg-white overflow-hidden h-full">
+            <div class="bg-slate-50 border-b border-slate-200 px-3 py-1 flex justify-between items-center text-xs text-slate-600 font-semibold shrink-0">
+              <span>JavaScript</span>
+              <span id="box-stat-js" class="text-[10px] font-mono text-slate-400">0 行</span>
+            </div>
+            <div class="flex-1 flex min-h-0 relative overflow-hidden font-mono text-xs">
+              <div id="box-lines-js" class="line-numbers w-8 py-2.5 bg-slate-50 border-r border-slate-200 text-slate-400 text-right pr-2 shrink-0">1</div>
+              <textarea id="box-editor-js" spellcheck="false" class="code-textarea flex-1 w-full h-full p-2.5 text-slate-800 bg-transparent border-none" placeholder="// JavaScript"></textarea>
+            </div>
+          </div>
+
+          <!-- Preview Pane -->
+          <div id="box-pane-preview" class="flex-1 min-w-0 w-full md:w-auto flex flex-col bg-white overflow-hidden h-full">
+            <div class="bg-slate-50 border-b border-slate-200 px-3 py-1 flex justify-between items-center text-xs text-slate-600 font-semibold shrink-0">
+              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Preview</span>
+              <button onclick="compileBoxPreview()" class="text-slate-400 hover:text-slate-700 text-[11px]"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+            <iframe id="box-preview-frame" class="w-full flex-1 min-h-0 border-none bg-white"></iframe>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <!-- TAB 4: HTML抽出 (HTML Extractor) -->
+    <section id="view-html-extractor" class="main-view hidden flex-1 flex flex-col p-4 md:p-6 overflow-y-auto space-y-4">
+      <div class="max-w-4xl w-full mx-auto space-y-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">HTML抽出（リンクから）</h2>
+          <p class="text-xs text-slate-500 mt-0.5">URL / Data URI / 圧縮共有リンク（#share=...）からHTMLコードを読み込み抽視・編集転送します。</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+          <label class="block text-xs font-bold text-slate-700">ソースURL / Data URI / 共有リンク</label>
+          <div class="flex gap-2">
+            <input type="text" id="ext-source-input" placeholder="https://example.com または #share=... または data:text/html,..." class="flex-1 bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:border-brand-700">
+            <button onclick="extractHtmlFromSource()" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded shrink-0">
+              抽出実行
+            </button>
+          </div>
+        </div>
+
+        <div id="ext-result-card" class="hidden bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <span class="text-xs font-bold text-slate-800">抽出されたHTML</span>
+            <span id="ext-stats-badge" class="text-[11px] font-mono text-slate-500">0 行 (0 文字)</span>
+          </div>
+          <textarea id="ext-output-text" readonly class="code-textarea w-full h-64 bg-slate-50 border border-slate-200 rounded p-3 text-xs font-mono text-slate-800"></textarea>
+          
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button onclick="sendExtractedToCreator()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded">
+              HTMLファイル作成へ送る
+            </button>
+            <button onclick="sendExtractedToBox()" class="px-3 py-1.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded">
+              HTML共有 (HTML Box) へ送る
+            </button>
+            <button onclick="copyInput('ext-output-text')" class="px-3 py-1.5 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded">
+              コピー
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: ファイルコンバータ (File Converter) -->
+    <section id="view-file-converter" class="main-view hidden flex-1 flex flex-col p-4 md:p-6 overflow-y-auto space-y-6">
+      <div class="max-w-4xl w-full mx-auto space-y-6">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">ファイルコンバータ</h2>
+          <p class="text-xs text-slate-500 mt-0.5">画像フォーマット変換・音声/動画変換・データフォーマットの相互変換を行います。</p>
+        </div>
+
+        <!-- Converter Type Selector -->
+        <div class="bg-white border border-slate-200 rounded-lg p-4 space-y-4">
+          <div class="flex border-b border-slate-200 text-xs font-bold text-slate-600 gap-4 pb-2">
+            <button onclick="switchConvType('image')" id="conv-tab-image" class="text-brand-700 border-b-2 border-brand-700 pb-1">画像変換</button>
+            <button onclick="switchConvType('data')" id="conv-tab-data" class="text-slate-500 hover:text-slate-800 pb-1">テキスト / データ変換</button>
+          </div>
+
+          <!-- Image Converter Form -->
+          <div id="conv-section-image" class="space-y-4">
+            <div class="space-y-1">
+              <label class="block text-xs font-semibold text-slate-700">元画像ファイルを選択</label>
+              <input type="file" id="conv-img-file" accept="image/*" class="text-xs text-slate-600">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-700">変換先フォーマット</label>
+                <select id="conv-img-format" class="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-800">
+                  <option value="image/png">PNG</option>
+                  <option value="image/jpeg">JPG / JPEG</option>
+                  <option value="image/webp">WebP</option>
+                  <option value="image/bmp">BMP</option>
+                </select>
+              </div>
+
+              <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-700">画質 (JPG/WebP): <span id="conv-quality-val">0.9</span></label>
+                <input type="range" id="conv-img-quality" min="0.1" max="1.0" step="0.05" value="0.9" class="w-full" oninput="document.getElementById('conv-quality-val').textContent = this.value">
+              </div>
+            </div>
+
+            <button onclick="convertImage()" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded">
+              画像変換を実行
+            </button>
+          </div>
+
+          <!-- Data Converter Form -->
+          <div id="conv-section-data" class="hidden space-y-4">
+            <div class="space-y-1">
+              <label class="block text-xs font-semibold text-slate-700">変換元テキスト</label>
+              <textarea id="conv-data-input" class="code-textarea w-full h-32 bg-slate-50 border border-slate-200 rounded p-2.5 text-xs font-mono text-slate-800" placeholder="テキスト / JSON / CSV などを入力"></textarea>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button onclick="convertDataFormat('json-to-csv')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded">JSON ➔ CSV</button>
+              <button onclick="convertDataFormat('csv-to-json')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded">CSV ➔ JSON</button>
+              <button onclick="convertDataFormat('text-to-html')" class="px-3 py-1.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded">TEXT ➔ HTML</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conversion Output Card -->
+        <div id="conv-result-card" class="hidden bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+          <h3 class="text-xs font-bold text-slate-800">変換結果</h3>
+          <div id="conv-result-box" class="p-3 bg-slate-50 border border-slate-200 rounded text-xs font-mono break-all">
+            <!-- Dynamic Result -->
+          </div>
+
+          <div class="flex gap-2">
+            <button id="conv-send-to-link-btn" class="px-3 py-1.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded">
+              直リンク作成へ送る
+            </button>
+            <button id="conv-download-btn" class="px-3 py-1.5 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded">
+              ダウンロード
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- HTML Box Share Modal -->
+  <div id="box-share-modal" class="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white border border-slate-200 rounded-lg max-w-lg w-full p-5 space-y-4 shadow-lg">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+        <h3 class="text-sm font-bold text-slate-900">HTML共有 (HTML Box)</h3>
+        <button onclick="closeBoxShareModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-1">
+        <label class="block text-xs font-bold text-slate-700">圧縮共有URL (コード・表示状態含む)</label>
+        <div class="flex gap-2">
+          <input type="text" id="box-share-url-input" readonly class="flex-1 bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs font-mono text-slate-700 focus:outline-none">
+          <button onclick="copyInput('box-share-url-input')" class="px-3 py-1.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded shrink-0">コピー</button>
+        </div>
+      </div>
+
+      <div class="space-y-1 pt-2 border-t border-slate-100">
+        <label class="block text-xs font-bold text-slate-700">直リンク Data URI</label>
+        <div class="flex gap-2">
+          <input type="text" id="box-data-uri-input" readonly class="flex-1 bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs font-mono text-slate-700 focus:outline-none">
+          <button onclick="copyInput('box-data-uri-input')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold rounded shrink-0">コピー</button>
+        </div>
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button onclick="closeBoxShareModal()" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirm-modal" class="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-lg border border-slate-200 shadow-lg max-w-sm w-full p-5 space-y-4">
+      <div class="space-y-1">
+        <h3 class="text-sm font-bold text-slate-900" id="confirm-title">確認</h3>
+        <p class="text-xs text-slate-500" id="confirm-desc">この操作を実行しますか？</p>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeConfirmModal()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded">キャンセル</button>
+        <button id="confirm-action-btn" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded">実行</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs px-4 py-2.5 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2 z-50">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toast-message">処理が完了しました</span>
+  </div>
+
+  <!-- Application Logic Script -->
+  <script>
+    // System Global Navigation
+    function switchMainTab(tabId) {
+      document.querySelectorAll('.main-view').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.main-tab-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-700', 'text-white');
+        btn.classList.add('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-200/60');
+      });
+
+      const activeView = document.getElementById(`view-${tabId}`);
+      const activeBtn = document.getElementById(`main-tab-${tabId}`);
+      if (activeView) activeView.classList.remove('hidden');
+      if (activeBtn) {
+        activeBtn.classList.add('bg-brand-700', 'text-white');
+        activeBtn.classList.remove('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-200/60');
+      }
+
+      if (tabId === 'html-box') {
+        compileBoxPreview();
+      }
+    }
+
+    // Copy Input Utility
+    function copyInput(inputId) {
+      const el = document.getElementById(inputId);
+      if (!el || !el.value) return;
+
+      const text = el.value;
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => showToast('コピーしました'));
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('コピーしました');
+      }
+    }
+
+    let toastTimer;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2000);
+    }
+
+    // Modal Helper
+    let confirmHandler = null;
+    function openConfirmModal(title, desc, onConfirm) {
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-desc').textContent = desc;
+      confirmHandler = onConfirm;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      confirmHandler = null;
+    }
+    document.getElementById('confirm-action-btn').addEventListener('click', () => {
+      if (confirmHandler) confirmHandler();
+      closeConfirmModal();
+    });
+
+    // ----------------------------------------------------
+    // TAB 1: リンク作成 (Link Creator)
+    // ----------------------------------------------------
+    let linkHistory = [];
+    const LINK_HIST_KEY = 'suite_link_history_v1';
+
+    function loadLinkHistory() {
+      try {
+        const stored = localStorage.getItem(LINK_HIST_KEY);
+        if (stored) linkHistory = JSON.parse(stored);
+      } catch (e) { linkHistory = []; }
+      renderLinkHistory();
+    }
+
+    function saveLinkHistory() {
+      try { localStorage.setItem(LINK_HIST_KEY, JSON.stringify(linkHistory)); } catch (e) {}
+    }
+
+    function handleLinkFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      processLinkFile(file);
+    }
+
+    function processLinkFile(file) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const dataUri = evt.target.result;
+        displayLinkResult(file.name, file.size, file.type, dataUri);
+
+        linkHistory.unshift({
+          id: Date.now(),
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          dataUri: dataUri,
+          date: new Date().toLocaleDateString('ja-JP')
+        });
+        saveLinkHistory();
+        renderLinkHistory();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function displayLinkResult(name, size, type, dataUri) {
+      document.getElementById('res-file-name').textContent = name;
+      document.getElementById('res-file-size').textContent = (size / 1024).toFixed(1) + ' KB';
+      document.getElementById('res-data-uri').value = dataUri;
+
+      const prevBox = document.getElementById('res-preview-box');
+      prevBox.innerHTML = '';
+
+      if (type.startsWith('image/')) {
+        prevBox.innerHTML = `<img src="${dataUri}" class="max-h-48 max-w-full rounded object-contain border border-slate-200">`;
+      } else if (type.startsWith('audio/')) {
+        prevBox.innerHTML = `<audio controls src="${dataUri}" class="w-full max-w-md"></audio>`;
+      } else if (type.startsWith('video/')) {
+        prevBox.innerHTML = `<video controls src="${dataUri}" class="max-h-48 max-w-full rounded border border-slate-200"></video>`;
+      } else {
+        prevBox.innerHTML = `<div class="text-xs text-slate-500 flex items-center gap-1.5"><i class="fa-solid fa-file-lines text-lg"></i> プレビュー不可 (${type || '汎用ファイル'})</div>`;
+      }
+
+      document.getElementById('link-result-card').classList.remove('hidden');
+    }
+
+    function renderLinkHistory() {
+      const list = document.getElementById('link-history-list');
+      list.innerHTML = '';
+
+      if (linkHistory.length === 0) {
+        list.innerHTML = `<p class="text-xs text-slate-400 py-2">履歴はありません</p>`;
+        return;
+      }
+
+      linkHistory.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded text-xs gap-2';
+        div.innerHTML = `
+          <div class="flex items-center space-x-2 truncate min-w-0">
+            <i class="fa-solid fa-paperclip text-slate-400 shrink-0"></i>
+            <span class="truncate font-medium text-slate-700">${escapeHtml(item.name)}</span>
+            <span class="text-[10px] text-slate-400 font-mono shrink-0">${(item.size / 1024).toFixed(0)} KB</span>
+          </div>
+          <div class="flex items-center space-x-1 shrink-0">
+            <button onclick="displayLinkResult('${escapeHtml(item.name)}', ${item.size}, '${item.type}', '${item.dataUri}')" class="px-2 py-1 bg-white border border-slate-200 hover:bg-slate-100 rounded text-[11px] text-slate-600">表示</button>
+            <button onclick="deleteLinkHistoryItem(${index})" class="p-1 hover:text-rose-600 text-slate-400"><i class="fa-regular fa-trash-can"></i></button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function deleteLinkHistoryItem(index) {
+      linkHistory.splice(index, 1);
+      saveLinkHistory();
+      renderLinkHistory();
+    }
+
+    function clearLinkHistory() {
+      openConfirmModal('履歴消去', 'リンク作成の全履歴を消去しますか？', () => {
+        linkHistory = [];
+        saveLinkHistory();
+        renderLinkHistory();
+      });
+    }
+
+    // Drag & Drop
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-brand-700', 'bg-brand-50/30'); });
+    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-brand-700', 'bg-brand-50/30'); });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-brand-700', 'bg-brand-50/30');
+      if (e.dataTransfer.files.length > 0) processLinkFile(e.dataTransfer.files[0]);
+    });
+
+    // ----------------------------------------------------
+    // TAB 2: HTMLファイル作成 (HTML File Creator)
+    // ----------------------------------------------------
+    function updateCreatorPreview() {
+      const code = document.getElementById('creator-editor').value;
+      const iframe = document.getElementById('creator-preview-frame');
+      iframe.srcdoc = code;
+    }
+
+    function resetCreatorTemplate() {
+      document.getElementById('creator-editor').value = 'Hello, World!';
+      updateCreatorPreview();
+    }
+
+    function downloadCreatorHtml() {
+      const code = document.getElementById('creator-editor').value;
+      const blob = new Blob([code], { type: 'text/html;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'index.html';
+      a.click();
+    }
+
+    // ----------------------------------------------------
+    // TAB 3: HTML共有 (HTML Box Full Implementation)
+    // ----------------------------------------------------
+    let boxProjects = [];
+    let boxActiveId = null;
+    let boxSidebarOpen = true;
+    let boxPanes = { html: true, css: false, js: false, preview: true };
+
+    const BOX_STORAGE_KEY = 'htmlbox_projects_suite_v1';
+    const boxChannel = window.BroadcastChannel ? new BroadcastChannel('htmlbox_suite_channel') : null;
+
+    function initBoxApp() {
+      loadBoxProjects();
+      setupBoxSync();
+    }
+
+    function setupBoxSync() {
+      window.addEventListener('storage', (e) => {
+        if (e.key === BOX_STORAGE_KEY) {
+          loadBoxProjects(false);
+        }
+      });
+      if (boxChannel) {
+        boxChannel.onmessage = (e) => {
+          if (e.data && e.data.type === 'SYNC') loadBoxProjects(false);
+        };
+      }
+    }
+
+    function broadcastBoxSync() {
+      if (boxChannel) boxChannel.postMessage({ type: 'SYNC' });
+    }
+
+    function getNextSmallestBoxProjectNumber() {
+      const used = new Set();
+      boxProjects.forEach(p => {
+        const m = p.title.match(/^Project\s+(\d+)$/i);
+        if (m) used.add(parseInt(m[1], 10));
+      });
+      let n = 1;
+      while (used.has(n)) n++;
+      return n;
+    }
+
+    function loadBoxProjects(selectFirst = true) {
+      try {
+        const stored = localStorage.getItem(BOX_STORAGE_KEY);
+        if (stored) boxProjects = JSON.parse(stored);
+      } catch (e) { boxProjects = []; }
+
+      if (!boxProjects || boxProjects.length === 0) {
+        createDefaultBoxProject();
+      } else {
+        renderBoxSidebarList();
+        if (selectFirst || !boxActiveId) {
+          selectBoxProject(boxProjects[0].id);
+        } else {
+          const cur = boxProjects.find(p => p.id === boxActiveId);
+          if (cur) document.getElementById('box-active-views').textContent = cur.views || 0;
+        }
+      }
+    }
+
+    function saveBoxProjects() {
+      try {
+        localStorage.setItem(BOX_STORAGE_KEY, JSON.stringify(boxProjects));
+        document.getElementById('box-save-status').textContent = '保存済み';
+        broadcastBoxSync();
+      } catch (e) {
+        document.getElementById('box-save-status').textContent = '保存エラー';
+      }
+    }
+
+    function createDefaultBoxProject() {
+      const p = {
+        id: 'proj_' + Date.now(),
+        title: 'Project 1',
+        html: 'Hello, World!',
+        css: '',
+        js: '',
+        views: 0
+      };
+      boxProjects = [p];
+      saveBoxProjects();
+      renderBoxSidebarList();
+      selectBoxProject(p.id);
+    }
+
+    function createNewBoxProject() {
+      const num = getNextSmallestBoxProjectNumber();
+      const p = {
+        id: 'proj_' + Date.now(),
+        title: `Project ${num}`,
+        html: 'Hello, World!',
+        css: '',
+        js: '',
+        views: 0
+      };
+      boxProjects.unshift(p);
+      saveBoxProjects();
+      renderBoxSidebarList();
+      selectBoxProject(p.id);
+      showToast(`「Project ${num}」を作成しました`);
+    }
+
+    function selectBoxProject(id) {
+      boxActiveId = id;
+      const proj = boxProjects.find(p => p.id === id);
+      if (!proj) return;
+
+      document.getElementById('box-active-title').value = proj.title;
+      document.getElementById('box-editor-html').value = proj.html || '';
+      document.getElementById('box-editor-css').value = proj.css || '';
+      document.getElementById('box-editor-js').value = proj.js || '';
+      document.getElementById('box-active-views').textContent = proj.views || 0;
+
+      updateBoxLineNumbers();
+      compileBoxPreview();
+      renderBoxSidebarList();
+    }
+
+    function updateBoxActiveTitle(val) {
+      const proj = boxProjects.find(p => p.id === boxActiveId);
+      if (proj && val.trim()) {
+        proj.title = val.trim();
+        saveBoxProjects();
+        renderBoxSidebarList();
+      }
+    }
+
+    function duplicateBoxProject(id, e) {
+      if (e) e.stopPropagation();
+      const orig = boxProjects.find(p => p.id === id);
+      if (!orig) return;
+
+      const num = getNextSmallestBoxProjectNumber();
+      const copy = {
+        ...JSON.parse(JSON.stringify(orig)),
+        id: 'proj_' + Date.now(),
+        title: `Project ${num}`,
+        views: 0
+      };
+
+      boxProjects.unshift(copy);
+      saveBoxProjects();
+      renderBoxSidebarList();
+      selectBoxProject(copy.id);
+      showToast('プロジェクトを複製しました');
+    }
+
+    function deleteBoxProject(id, e) {
+      if (e) e.stopPropagation();
+      if (boxProjects.length <= 1) {
+        showToast('最後のプロジェクトは削除できません');
+        return;
+      }
+      const proj = boxProjects.find(p => p.id === id);
+      if (!proj) return;
+
+      openConfirmModal('プロジェクト削除', `「${proj.title}」を削除しますか？`, () => {
+        boxProjects = boxProjects.filter(p => p.id !== id);
+        saveBoxProjects();
+        renderBoxSidebarList();
+        selectBoxProject(boxProjects[0].id);
+        showToast('削除しました');
+      });
+    }
+
+    function confirmBoxDeleteAll() {
+      openConfirmModal('全削除', 'すべてのプロジェクトを削除しますか？', () => {
+        localStorage.removeItem(BOX_STORAGE_KEY);
+        createDefaultBoxProject();
+        showToast('全削除しました');
+      });
+    }
+
+    function toggleBoxSidebar() {
+      boxSidebarOpen = !boxSidebarOpen;
+      const sb = document.getElementById('box-sidebar');
+      if (boxSidebarOpen) sb.classList.remove('-ml-60');
+      else sb.classList.add('-ml-60');
+    }
+
+    function renderBoxSidebarList() {
+      const list = document.getElementById('box-project-list');
+      list.innerHTML = '';
+
+      boxProjects.forEach(p => {
+        const isActive = p.id === boxActiveId;
+        const div = document.createElement('div');
+        div.className = `h-9 px-2 rounded text-xs flex items-center justify-between cursor-pointer border transition-colors ${
+          isActive ? 'bg-brand-50 text-brand-700 font-bold border-brand-100' : 'bg-white hover:bg-slate-100 text-slate-700 border-transparent'
+        }`;
+        div.onclick = () => selectBoxProject(p.id);
+
+        div.innerHTML = `
+          <div class="flex items-center space-x-1.5 truncate min-w-0">
+            <i class="fa-regular fa-file-code text-[11px] ${isActive ? 'text-brand-700' : 'text-slate-400'}"></i>
+            <span class="truncate">${escapeHtml(p.title)}</span>
+          </div>
+          <div class="flex items-center space-x-1 shrink-0">
+            <span class="text-[10px] font-mono px-1 py-0.2 bg-slate-100 text-slate-600 rounded">Open: ${p.views || 0}</span>
+            <button onclick="duplicateBoxProject('${p.id}', event)" class="w-5 h-5 flex items-center justify-center hover:text-slate-900 text-slate-400" title="複製">
+              <i class="fa-regular fa-copy text-[10px]"></i>
+            </button>
+            <button onclick="deleteBoxProject('${p.id}', event)" class="w-5 h-5 flex items-center justify-center hover:text-rose-600 text-slate-400" title="削除">
+              <i class="fa-regular fa-trash-can text-[10px]"></i>
+            </button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function toggleBoxPane(paneKey) {
+      boxPanes[paneKey] = !boxPanes[paneKey];
+      updateBoxPaneUI();
+    }
+
+    function updateBoxPaneUI() {
+      ['html', 'css', 'js', 'preview'].forEach(key => {
+        const isVis = boxPanes[key];
+        const btn = document.getElementById(`btn-box-pane-${key}`);
+        const pane = document.getElementById(`box-pane-${key}`);
+
+        if (isVis) {
+          btn.className = 'px-2.5 py-1 rounded transition text-white bg-brand-700 font-semibold';
+          pane.classList.remove('hidden');
+        } else {
+          btn.className = 'px-2.5 py-1 rounded transition text-slate-600 hover:text-slate-900 bg-transparent font-medium';
+          pane.classList.add('hidden');
+        }
+      });
+      if (boxPanes.preview) compileBoxPreview();
+    }
+
+    function updateBoxLineNumbers() {
+      ['html', 'css', 'js'].forEach(type => {
+        const ed = document.getElementById(`box-editor-${type}`);
+        const lines = ed.value.split('\n').length;
+        document.getElementById(`box-stat-${type}`).textContent = `${lines} 行`;
+        let numHtml = '';
+        for (let i = 1; i <= lines; i++) numHtml += i + '<br>';
+        document.getElementById(`box-lines-${type}`).innerHTML = numHtml;
+      });
+    }
+
+    function compileBoxPreview() {
+      if (!boxPanes.preview) return;
+      const html = document.getElementById('box-editor-html').value || '';
+      const css = document.getElementById('box-editor-css').value || '';
+      const js = document.getElementById('box-editor-js').value || '';
+
+      const docStr = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>${html}<script>${js}<\/script></body></html>`;
+      const iframe = document.getElementById('box-preview-frame');
+      iframe.srcdoc = docStr;
+    }
+
+    function incrementBoxProjectView(proj) {
+      if (!proj) return;
+      proj.views = (proj.views || 0) + 1;
+      saveBoxProjects();
+      renderBoxSidebarList();
+      if (proj.id === boxActiveId) {
+        document.getElementById('box-active-views').textContent = proj.views;
+      }
+    }
+
+    function openBoxInNewTab() {
+      const proj = boxProjects.find(p => p.id === boxActiveId);
+      if (proj) incrementBoxProjectView(proj);
+
+      const html = document.getElementById('box-editor-html').value || '';
+      const css = document.getElementById('box-editor-css').value || '';
+      const js = document.getElementById('box-editor-js').value || '';
+      const docStr = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>${html}<script>${js}<\/script></body></html>`;
+
+      const blob = new Blob([docStr], { type: 'text/html;charset=utf-8' });
+      window.open(URL.createObjectURL(blob), '_blank');
+    }
+
+    function downloadBoxHtml() {
+      const proj = boxProjects.find(p => p.id === boxActiveId);
+      if (proj) incrementBoxProjectView(proj);
+
+      const html = document.getElementById('box-editor-html').value || '';
+      const css = document.getElementById('box-editor-css').value || '';
+      const js = document.getElementById('box-editor-js').value || '';
+      const docStr = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>${html}<script>${js}<\/script></body></html>`;
+
+      const blob = new Blob([docStr], { type: 'text/html;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${proj ? proj.title : 'project'}.html`;
+      a.click();
+    }
+
+    function openBoxShareModal() {
+      const proj = boxProjects.find(p => p.id === boxActiveId);
+      const data = {
+        title: proj ? proj.title : 'Shared',
+        html: document.getElementById('box-editor-html').value,
+        css: document.getElementById('box-editor-css').value,
+        js: document.getElementById('box-editor-js').value
+      };
+
+      const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(data));
+      const url = `${window.location.origin}${window.location.pathname}#share=${compressed}`;
+      document.getElementById('box-share-url-input').value = url;
+
+      const docStr = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${data.css}</style></head><body>${data.html}<script>${data.js}<\/script></body></html>`;
+      document.getElementById('box-data-uri-input').value = `data:text/html;charset=utf-8,${encodeURIComponent(docStr)}`;
+
+      document.getElementById('box-share-modal').classList.remove('hidden');
+    }
+
+    function closeBoxShareModal() {
+      document.getElementById('box-share-modal').classList.add('hidden');
+    }
+
+    function handleBoxShareHash() {
+      const hash = window.location.hash;
+      if (hash.startsWith('#share=')) {
+        try {
+          const compressed = hash.replace('#share=', '');
+          const dataStr = LZString.decompressFromEncodedURIComponent(compressed);
+          if (dataStr) {
+            const data = JSON.parse(dataStr);
+            const num = getNextSmallestBoxProjectNumber();
+            const p = {
+              id: 'proj_' + Date.now(),
+              title: data.title || `Project ${num}`,
+              html: data.html || '',
+              css: data.css || '',
+              js: data.js || '',
+              views: 1
+            };
+            boxProjects.unshift(p);
+            saveBoxProjects();
+            renderBoxSidebarList();
+            switchMainTab('html-box');
+            selectBoxProject(p.id);
+            showToast('共有リンクから読み込みました');
+          }
+        } catch (e) {}
+      }
+    }
+
+    // Bind Box Inputs
+    ['html', 'css', 'js'].forEach(type => {
+      const ed = document.getElementById(`box-editor-${type}`);
+      ed.addEventListener('input', () => {
+        const proj = boxProjects.find(p => p.id === boxActiveId);
+        if (proj) {
+          proj[type] = ed.value;
+          saveBoxProjects();
+        }
+        updateBoxLineNumbers();
+        compileBoxPreview();
+      });
+      ed.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = ed.selectionStart;
+          const end = ed.selectionEnd;
+          ed.value = ed.value.substring(0, start) + '  ' + ed.value.substring(end);
+          ed.selectionStart = ed.selectionEnd = start + 2;
+          ed.dispatchEvent(new Event('input'));
+        }
+      });
+    });
+
+    // ----------------------------------------------------
+    // TAB 4: HTML抽出 (HTML Extractor)
+    // ----------------------------------------------------
+    function extractHtmlFromSource() {
+      const input = document.getElementById('ext-source-input').value.trim();
+      if (!input) return;
+
+      if (input.startsWith('#share=')) {
+        try {
+          const dataStr = LZString.decompressFromEncodedURIComponent(input.replace('#share=', ''));
+          const data = JSON.parse(dataStr);
+          const fullHtml = `<!DOCTYPE html><html><head><style>${data.css||''}</style></head><body>${data.html||''}<script>${data.js||''}<\/script></body></html>`;
+          displayExtractedResult(fullHtml);
+        } catch (e) {
+          showToast('圧縮リンクの解析に失敗しました');
+        }
+      } else if (input.startsWith('data:text/html')) {
+        const code = decodeURIComponent(input.split(',')[1] || '');
+        displayExtractedResult(code);
+      } else {
+        showToast('外部URL取得中...');
+        fetch(input).then(res => res.text()).then(html => {
+          displayExtractedResult(html);
+        }).catch(() => {
+          showToast('CORS制約により取得不可。Data URIまたは#shareをご利用ください');
+        });
+      }
+    }
+
+    function displayExtractedResult(code) {
+      document.getElementById('ext-output-text').value = code;
+      const lines = code.split('\n').length;
+      document.getElementById('ext-stats-badge').textContent = `${lines} 行 (${code.length} 文字)`;
+      document.getElementById('ext-result-card').classList.remove('hidden');
+    }
+
+    function sendExtractedToCreator() {
+      const code = document.getElementById('ext-output-text').value;
+      document.getElementById('creator-editor').value = code;
+      updateCreatorPreview();
+      switchMainTab('html-creator');
+      showToast('HTMLファイル作成に送信しました');
+    }
+
+    function sendExtractedToBox() {
+      const code = document.getElementById('ext-output-text').value;
+      const num = getNextSmallestBoxProjectNumber();
+      const p = {
+        id: 'proj_' + Date.now(),
+        title: `Project ${num}`,
+        html: code,
+        css: '',
+        js: '',
+        views: 0
+      };
+      boxProjects.unshift(p);
+      saveBoxProjects();
+      renderBoxSidebarList();
+      switchMainTab('html-box');
+      selectBoxProject(p.id);
+      showToast('HTML共有 (HTML Box) に送信しました');
+    }
+
+    // ----------------------------------------------------
+    // TAB 5: ファイルコンバータ (File Converter)
+    // ----------------------------------------------------
+    let currentConvertedBlob = null;
+    let currentConvertedName = '';
+
+    function switchConvType(type) {
+      document.getElementById('conv-section-image').classList.toggle('hidden', type !== 'image');
+      document.getElementById('conv-section-data').classList.toggle('hidden', type !== 'data');
+      document.getElementById('conv-tab-image').className = type === 'image' ? 'text-brand-700 border-b-2 border-brand-700 pb-1' : 'text-slate-500 hover:text-slate-800 pb-1';
+      document.getElementById('conv-tab-data').className = type === 'data' ? 'text-brand-700 border-b-2 border-brand-700 pb-1' : 'text-slate-500 hover:text-slate-800 pb-1';
+    }
+
+    function convertImage() {
+      const input = document.getElementById('conv-img-file');
+      if (!input.files || input.files.length === 0) {
+        showToast('画像ファイルを選択してください');
+        return;
+      }
+      const file = input.files[0];
+      const format = document.getElementById('conv-img-format').value;
+      const quality = parseFloat(document.getElementById('conv-img-quality').value);
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        canvas.toBlob((blob) => {
+          currentConvertedBlob = blob;
+          const ext = format.split('/')[1];
+          currentConvertedName = `converted_${Date.now()}.${ext}`;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const dataUri = e.target.result;
+            showConvResult(`<img src="${dataUri}" class="max-h-40 rounded border">`, dataUri, currentConvertedName);
+          };
+          reader.readAsDataURL(blob);
+        }, format, quality);
+      };
+      img.src = URL.createObjectURL(file);
+    }
+
+    function convertDataFormat(type) {
+      const input = document.getElementById('conv-data-input').value;
+      if (!input.trim()) return;
+
+      try {
+        let result = '';
+        if (type === 'json-to-csv') {
+          const json = JSON.parse(input);
+          const keys = Object.keys(json[0]);
+          result = keys.join(',') + '\n' + json.map(row => keys.map(k => JSON.stringify(row[k] || '')).join(',')).join('\n');
+          currentConvertedName = 'data.csv';
+        } else if (type === 'csv-to-json') {
+          const lines = input.trim().split('\n');
+          const headers = lines[0].split(',');
+          const json = lines.slice(1).map(line => {
+            const values = line.split(',');
+            const obj = {};
+            headers.forEach((h, i) => obj[h.trim()] = values[i] ? values[i].trim() : '');
+            return obj;
+          });
+          result = JSON.stringify(json, null, 2);
+          currentConvertedName = 'data.json';
+        } else if (type === 'text-to-html') {
+          result = `<p>${escapeHtml(input).replace(/\n/g, '<br>')}</p>`;
+          currentConvertedName = 'document.html';
+        }
+
+        currentConvertedBlob = new Blob([result], { type: 'text/plain' });
+        showConvResult(`<pre class="text-xs">${escapeHtml(result)}</pre>`, result, currentConvertedName);
+      } catch (e) {
+        showToast('データ変換に失敗しました');
+      }
+    }
+
+    function showConvResult(htmlPreview, dataVal, filename) {
+      document.getElementById('conv-result-box').innerHTML = htmlPreview;
+      document.getElementById('conv-result-card').classList.remove('hidden');
+
+      document.getElementById('conv-send-to-link-btn').onclick = () => {
+        if (currentConvertedBlob) {
+          processLinkFile(new File([currentConvertedBlob], filename, { type: currentConvertedBlob.type }));
+          switchMainTab('link-creator');
+          showToast('直リンク作成に送信しました');
+        }
+      };
+
+      document.getElementById('conv-download-btn').onclick = () => {
+        if (currentConvertedBlob) {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(currentConvertedBlob);
+          a.download = filename;
+          a.click();
+        }
+      };
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // System Boot
+    window.addEventListener('DOMContentLoaded', () => {
+      loadLinkHistory();
+      updateCreatorPreview();
+      initBoxApp();
+      handleBoxShareHash();
+    });
+  </script>
+</body>
+</html>
